@@ -17,9 +17,11 @@ from django.contrib import admin
 from django.urls import path
 # 引入项目
 from homepage import views as homepage_views
+from inject_str import views as str_views
 
 # 这里配置 url
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('/', homepage_views.index)
+	path('', homepage_views.index),
+	path('list/', str_views.index),
+	path('admin/', admin.site.urls),
 ]

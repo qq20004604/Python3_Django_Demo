@@ -299,3 +299,119 @@ STATICFILES_FINDERS = (
 
 ## 6、返回嵌入数据的模板网页
 
+### 6.1、新建一个应用
+
+```
+python manage.py startapp inject_str
+```
+
+执行后，文件夹创建完毕。
+
+### 6.2、添加路由（urls.py）
+
+打开 urls.py 文件，做两件事：
+
+1、引入views：
+
+```
+from inject_str import views as str_views
+```
+
+2、配置路由，在 urlpatterns 这个 list 里添加如下元素
+
+```
+path('list/', str_views.index),
+```
+
+此时，可以通过路由来访问这个views了，但 views 里的函数还没写好
+
+### 6.3、写渲染函数（views.py）
+
+编辑 inject_str.py 文件，内容如下：
+
+```
+from django.shortcuts import render
+
+
+# Create your views here.
+def index(request):
+	return render(request, 'inject_str.html', {
+		'title': '这里是标题',
+		'content': '这里是h1栏',
+		'list': [
+			'第一行',
+			'第二行'
+		]
+	})
+```
+
+此时，渲染函数也写好了，但我们还差一个模板文件。模板文件默认是读取 templates 这个目录里的文件的。
+
+
+### 6.4、新建一个带模板字符串的html文件
+
+在templates新建一个 inject_str.html 文件，内容如下：
+
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title }}</title>
+</head>
+<body>
+<h1>{{ content }}</h1>
+<ol>
+    <li>下面是循环的演示</li>
+    {% for i in list %}
+        <li>{{ i }}</li>
+    {% endfor %}
+</ol>
+</body>
+</html>
+```
+
+里面包含：
+
+* 变量名为 title 的字符串，放在 title 标签中；
+* 变量名为 content 的字符串，放在 h1 标签中；
+* 变量名为 list 的 list，循环产生 li 标签，每个 li 标签的内容是 list 里的一个元素；
+
+即对应 6.3 中 render 函数的第三个参数。
+
+### 6.5、验证
+
+确保你已启动了服务器，不知道如何启动的话，往上翻看第三节。
+
+然后访问 127.0.0.1:8000/list/
+
+显示内容为（html内容）：
+
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>这里是标题</title>
+</head>
+<body>
+<h1>这里是h1栏</h1>
+<ol>
+    <li>下面是循环的演示</li>
+    
+        <li>第一行</li>
+    
+        <li>第二行</li>
+    
+</ol>
+</body>
+</html>
+```
+
+之所以中间有空行，是因为 for in 函数的原因，这个不影响实际显示，不需要处理。
+
+
+## 7、获取用户发送的信息
+
+### 7.1、获取 form 表单发送信息
+
