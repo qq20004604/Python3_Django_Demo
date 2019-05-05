@@ -3,19 +3,14 @@
 
 ## 0、说明
 
+项目demo地址：https://github.com/qq20004604/Python3_Django_Demo
+
 版本：
 
 ```
 django版本：2.2.1
 python版本：3.7
 ```
-
-配置：
-
-```
-默认用户名 wd 默认密码 yjQeZ3PDmhVudTR
-```
-
 
 ## 1、安装
 
@@ -411,7 +406,7 @@ def index(request):
 之所以中间有空行，是因为 for in 函数的原因，这个不影响实际显示，不需要处理。
 
 
-## 7、获取用户发送的信息
+## 7、异步请求（ajax）的处理
 
 ### 7.1、新建一个应用
 
