@@ -413,5 +413,264 @@ def index(request):
 
 ## 7、获取用户发送的信息
 
-### 7.1、获取 form 表单发送信息
+### 7.1、新建一个应用
+
+应用名为：getform
+
+```
+python manage.py startapp getform
+```
+
+### 7.2、先编辑路由
+
+编辑 urls.py，先引入：
+
+```
+from getform import views as form_views
+```
+
+然后再配置路由（添加到 urlpatterns）中：
+
+```
+# 这个是html
+path('form/', form_views.index),
+# 这个是处理post提交
+path('form/submit', form_views.submit),
+```
+
+### 7.3、编辑渲染函数
+
+编辑 getform/viesw.py，内容为：
+
+```
+from django.shortcuts import render, HttpResponse
+
+
+# Create your views here.
+def index(request):
+	return render(request, 'form.html')
+
+
+def submit(request):
+	# 判断是 post 请求，注意，这里应是大写
+	if request.method == 'POST':
+		# 暂时留空
+		pass
+	return HttpResponse('开发中')
+```
+
+
+### 7.4、添加form表单页面
+
+在 templates 文件夹里添加 form.html，内容如下：
+
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>表单</title>
+</head>
+<body>
+<form action="/form/submit" method="post">
+    <p>
+        姓名：<input type="text" name="user">
+    </p>
+    <p>
+        年龄：<input type="text" name="age">
+    </p>
+    <p>
+        <input type="submit" value="提交">
+    </p>
+</form>
+</body>
+</html>
+```
+
+此时查看页面：``http://localhost:8000/form/``，正常。
+
+直接点击提交，进入报错页面，提示内容如下：
+
+```
+Forbidden (403)
+CSRF verification failed. Request aborted.
+```
+
+所谓 CSRF，参考：https://www.cnblogs.com/hyddd/archive/2009/04/09/1432744.html
+
+### 7.5、CSRF处理
+
+在form 标签内加入 ``{% csrf_token %}``，如下：（注意，一定要加到form标签内）
+
+```
+<form action="/form/submit" method="post">
+    {% csrf_token %}
+    <p>
+        姓名：<input type="text" name="user">
+    </p>
+    <p>
+        年龄：<input type="text" name="age">
+    </p>
+    <p>
+        <input type="submit" value="提交">
+    </p>
+</form>
+```
+
+效果是form标签内插入了如下标签（示例，value值是随机的）：
+
+```
+<input type="hidden" name="csrfmiddlewaretoken" value="BmyyOjDZrFZWBR5gKjKq3d8GCZpeIhn3CPSo5sm4HRaG8UQ2Vx9oq0mnrVAlU7ab">
+```
+
+此时再次点击提交按钮，会返回``开发中``三个字符串。
+
+### 7.6、重写处理post请求的函数
+
+重写结果如下：
+
+```
+def submit(request):
+	print(request.method)
+	# 判断是 post 请求，注意要是大写
+	if request.method == 'POST':
+		# 拿取数据，如果请求方式是 GET 的话，下面应该写为：request.GET.get('user')
+		username = request.POST.get('user')
+		age = request.POST.get('age')
+		# 这个是为了测试没有取到数据的值，测试结果：值为 None
+		test = request.POST.get('test')
+		print(username, age, test)
+		# 返回给用户
+		return HttpResponse('你输入的用户姓名是：%s, 年龄是：%s, test 是%s' % (username, age, test))
+	else:
+		return HttpResponse('没有拿取到数据噢')
+```
+
+重新提交，姓名为1，年龄为2，最后跳转到 ``http://localhost:8000/form/submit`` ，显示内容为：
+
+```
+你输入的用户姓名是：1, 年龄是：2, test 是None
+```
+
+### 7.7、接受JSON格式的请求
+
+以上情况是 form 表单的处理方式。我们常见的请求以JSON形式比较多，那么需要换个方式来处理。
+
+核心步骤如下：
+
+1. 使用 jquery 来发送 json 格式的异步请求；
+2. 由于是发送请求，因此要带上csrf（具体处理见以下代码）；
+3. django 需要在 body 里拿数据（和form表单不同）；
+4. 要调用 json 模块解析 json字符串；
+5. 返回信息要包装成 json 字符串，并改写返回信息的header；
+
+
+#### 7.7.1、使用jquery（示例，也可以用其他的）
+
+重写 templates/form.html 文件，如下：
+
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>表单</title>
+    <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+</head>
+<body>
+<form action="/form/submit" method="get">
+    {% csrf_token %}
+    <p>
+        姓名：<input type="text" name="user">
+    </p>
+    <p>
+        年龄：<input type="text" name="age">
+    </p>
+    <p>
+        <input type="submit" value="提交">
+    </p>
+</form>
+
+<button id="submit">点击以JSON格式提交固定内容</button>
+<h3>返回信息：<span id="res">空</span></h3>
+<script>
+    $("#submit").click(function () {
+        let data = {
+            content: '这里是测试内容'
+        }
+        $.ajax({
+            url: '/form/json',
+            type: 'post',
+            headers: {
+                // 要加 csrf 的请求头，如下
+                "X-CSRFToken": '{{ csrf_token }}',
+                // 要改请求头，以 json 格式发送信息
+                'Content-Type': 'application/json',
+            },
+            // 发送的数据要先转为 json 格式
+            data: JSON.stringify(data),
+            // 告诉服务器返回信息要以json格式返回
+            dataType: "json",
+        }).done(function (result) {
+            // 打印返回结果
+            console.log(result)
+            // 将返回信息插入到页面中
+            $("#res").text(result.res)
+        })
+    })
+</script>
+</body>
+</html>
+```
+
+做了几件事：
+
+* 引入jquery；
+* 绑定一个click事件；
+* headers 添加 csrf 和 ContentType；
+* 数据转为 json 字符串；
+* 拿取返回信息（默认已经被解析为对象了），显示并插入页面；
+
+
+#### 7.7.2、添加路由配置
+
+编辑 urls.py ，插入一条路由：
+
+```
+# 处理json提交
+path('form/json', form_views.postjson),
+```
+
+#### 7.7.3、编辑路由处理逻辑
+
+编辑 getform/views.py 文件，插入一个新函数：
+
+```
+def postjson(request):
+	# time.sleep(10)
+	if request.method == 'POST':
+		# 拿取数据：json发送post时，数据是在body里
+		# 要转为 utf8 格式编码
+		# print('request.body: ', request.body)
+		data = json.loads(request.body)
+		# 此时 data 是一个 dict
+		# print('data: ', data)
+		res = '你提交的内容是【%s】' % data['content']
+		# print('res: ', res)
+		result = {
+			'res': res
+		}
+		return HttpResponse(json.dumps(result), content_type="application/json")
+	else:
+		return HttpResponse('请求类型错误')
+```
+
+逻辑参照注释说明。
+
+#### 7.7.4、验证
+
+刷新页面，打开浏览器控制台，点击新增的按钮，查看ajax的发送信息和返回信息。
+
+一切如预期运行。
+
 
