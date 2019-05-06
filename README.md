@@ -669,3 +669,314 @@ def postjson(request):
 一切如预期运行。
 
 
+## 8、django和mysql交互
+
+### 8.1、环境安装
+
+首先，确保你安装了mysql，如果没有安装，请安装，或者使用我这里提供的 docker 版 mysql，如果是linux或者MacOS系统，直接运行 sh 文件就能安装了。
+
+https://github.com/qq20004604/docker-learning/tree/master/docker-demo-02-MySQL
+
+可以用安装一个虚拟机，装上centos，然后将文件下载到虚拟机上，运行 sh 文件。装虚拟机的教程参照我这篇文章：
+
+https://blog.csdn.net/qq20004604/article/details/85080666
+
+配置MySQL：
+
+* 账号为 diango；
+* 密码为 123456；
+* 端口（port）为3306；
+* IP地址为：xxx；
+
+### 8.2、diango和数据库的交互方式
+
+diango和mysql交互有两种方式：
+
+1. 使用第三方的 mysql-connector 数据库，参照教程：https://www.liaoxuefeng.com/wiki/1016959663602400/1017802264972000 ；或者使用我自己二次封装的：https://github.com/qq20004604/python3-lib/tree/master/mysql_lingling
+2. 使用自带的驱动（默认是sqlite3，但可以改为mysql）；
+
+根据难度和默认情况，我们以 sqlite3 ——> 自带mysql驱动 ——> 第三方模块 的顺序来分析
+
+### 8.3、和sqlite3交互
+
+#### 8.3.1、新建应用：
+
+```
+python manage.py startapp withdb
+```
+
+然后注册应用，编辑 settings.py，在 INSTALLED_APPS 添加新增应用withdb（homepage是之前添加的）
+
+```
+INSTALLED_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    # 以上都是默认，下面是新加入的
+    'homepage',
+    'withdb'
+]
+```
+
+#### 8.3.2、配置model
+
+编辑 withdb/models.py 文件：
+
+```
+from django.db import models
+
+
+# Create your models here.
+
+# 这个其实就是在建立表结构，使用的是 ORM 的思想
+class UserInfo(models.Model):
+    # 字段名id，primary_key=True表示主键自增
+    id = models.AutoField(primary_key=True)
+    # 字段名为username和password，max_length 指这2个字段的最大长度。
+    username = models.CharField(max_length=20)
+    password = models.CharField(max_length=20)
+    # 其他参数可选配置包括：（可以点进CharFiled函数查看）
+    # verbose_name = None, name = None, primary_key = False,
+    # max_length = None, unique = False, blank = False, null = False,
+    # db_index = False, rel = None, default = NOT_PROVIDED, editable = True,
+    # serialize = True, unique_for_date = None, unique_for_month = None,
+    # unique_for_year = None, choices = None, help_text = '', db_column = None,
+    # db_tablespace = None, auto_created = False, validators = (),
+    # error_messages = None
+```
+
+以上作用是设置3个字段：id（自增），username，password
+
+#### 8.3.3、创建 table
+
+执行命令：
+
+```
+python manage.py makemigrations
+```
+
+这个命令的效果，相当于在该 app（应用）下建立 migrations 目录，并记录下你所有的关于 modes.py 的改动，比如0001_initial.py， 但是这个改动还没有作用到数据库文件。
+
+再执行命令：
+
+```
+python manage.py migrate
+```
+
+这个命令的效果，是将上面的改动，作用到数据库之中。
+
+#### 8.3.4、添加路由
+
+老规矩，修改 urls.py ，添加路由：
+
+```
+# 显示页面
+path('user/', db_views.index),
+# 注册用户
+path('user/register', db_views.register),
+# 查看用户列表
+path('user/getusers', db_views.getusers)
+```
+
+#### 8.3.5、添加异步请求的处理逻辑
+
+修改 withdb/views.py，内容如下：
+
+```
+from django.shortcuts import render, HttpResponse
+# 引入
+from withdb import models
+import hashlib
+import json
+
+
+# 返回字符串的 md5 编码
+def get_md5(str):
+    md5 = hashlib.md5()
+    md5.update(str.encode('utf-8'))
+    # 返回 md5 字符串
+    return md5.hexdigest()
+
+
+# Create your views here.
+# 这个是显示页面的逻辑（好吧，也没啥逻辑可说）
+def index(request):
+    return render(request, 'users.html')
+
+
+# 这个是注册的逻辑
+def register(request):
+    print('register')
+    if not request.method == 'POST':
+        return HttpResponse(json.dumps({'code': 0, 'msg': '请求类型错误'}), content_type="application/json")
+
+    # 如果是 POST 请求
+    data = json.loads(request.body)
+    username = data["username"]
+    pw = data["pw"]
+    err = None
+    # 先验证一下是否符合要求
+    if len(username) > 20 or len(pw) > 20:
+        err = '用户名或者密码长度过长'
+    if len(username) < 8 or len(pw) < 8:
+        err = '用户名或密码长度过短（不应短于8位）'
+
+    # 如果有报错信息，则返回
+    if not err == None:
+        return HttpResponse(json.dumps({'code': 0, 'msg': err}), content_type="application/json")
+
+    # 截取md5前20位（避免明文密码存取）
+    md5_pw = get_md5(pw)[0:20]
+    # 一切顺利保存到数据库
+    save_success = True
+    # 防止存储失败
+    msg = 'success'
+    try:
+        # 这个的返回值，是当前 list 的所有值
+        models.UserInfo.objects.create(username=username, password=md5_pw)
+    except BaseException as e:
+        save_success = False
+        with open('./log.log', 'a') as f:
+            f.write('username = %s ,pw = %s , error = %s\n' % (username, pw, e))
+    print(save_success, msg, '-------------------')
+    if save_success:
+        return HttpResponse(json.dumps({'code': 0, 'msg': msg}), content_type="application/json")
+    else:
+        return HttpResponse(json.dumps({'code': 0, 'msg': '发生未知错误'}), content_type="application/json")
+
+
+# 这个是获取用户列表的逻辑
+def getusers(request):
+    user_list = models.UserInfo.objects.all()
+    list = []
+    # user_list　是一个 <class 'django.db.models.query.QuerySet'>
+    for i in user_list:
+        # i 是一个 <class 'withdb.models.UserInfo'> ，注意，不要把pw返回回去了
+        list.append({
+            'username': i.username,
+            'id': i.id
+        })
+    result = {'code': 0, 'data': list}
+    return HttpResponse(json.dumps(result), content_type="application/json")
+```
+
+分为三部分：
+
+1. 返回页面；
+2. 注册用户；
+3. 显示用户列表；
+
+第二步中，注册用户应该先查询，然后排除重复的用户名，不重复才能注册，这里省略掉了（因为第三步已经有相关逻辑，这里只是教程所以没写出来）
+
+#### 8.3.6、写前端页面
+
+templates 目录下创建 user.html
+
+内容如下：
+
+```
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>用户</title>
+    <script src="https://cdn.bootcss.com/jquery/1.12.4/jquery.min.js"></script>
+</head>
+<body>
+<p>
+    用户列表
+    <button id="getlist">点击刷新</button>
+</p>
+<ul id="list">
+    <li>空</li>
+</ul>
+
+<div>
+    <h2>注册</h2>
+    <p>用户名：<input type="text" id="username"></p>
+    <p>密码：<input type="text" id="pw"></p>
+    <p>
+        <button id="register">注册</button>
+    </p>
+    <p id="msg"></p>
+</div>
+<script>
+    let csrf_token = '{{ csrf_token }}'
+    $(function () {
+        $("#getlist").click(function () {
+            $.ajax({
+                url: '/user/getusers',
+                type: 'get',
+                headers: {
+                    // 要加 csrf 的请求头，如下
+                    "X-CSRFToken": csrf_token
+                },
+                // 告诉服务器返回信息要以json格式返回
+                dataType: "json",
+            }).done(function (result) {
+                // 打印返回结果
+                console.log(result)
+                // 将返回信息插入到页面中
+                let text = result.data.map(user => {
+                    return `<li>用户id：${user.id}，用户名：${user.username}</li>`
+                }).join('')
+                if (text.length === 0) {
+                    text = '<li>没有加载到数据</li>'
+                }
+                $("#list").html(text)
+            })
+        })
+
+        $("#register").click(function () {
+            $.ajax({
+                url: '/user/register',
+                type: 'post',
+                headers: {
+                    // 要加 csrf 的请求头，如下
+                    "X-CSRFToken": csrf_token,
+                    // 要改请求头，以 json 格式发送信息
+                    'Content-Type': 'application/json',
+                },
+                // 发送的数据要先转为 json 格式
+                data: JSON.stringify({
+                    username: $("#username").val(),
+                    pw: $("#pw").val()
+                }),
+                // 告诉服务器返回信息要以json格式返回
+                dataType: "json",
+            }).done(function (result) {
+                // 打印返回结果
+                console.log(result)
+                // 将返回信息插入到页面中
+                $("#msg").html(result.msg)
+            })
+        })
+    })
+</script>
+</body>
+</html>
+```
+
+两个功能：
+
+* 显示用户列表；
+* 注册新用户；
+
+#### 8.3.7、梳理逻辑和验证
+
+1、用户访问链接 /user/ 显示页面（templates/user.html）；
+
+2、页面里有两个功能：【显示用户列表】和【注册新用户】
+
+3、显示用户列表：将请求链接：``/user/getusers``，然后通过 ORM 表结构（widthdb/models.py）来读取数据库，并通过 widthdb/views.py 的 getusers 函数返回相关信息；
+
+4、注册用户：以异步请求的方式将username和password字段通过 ``/user/getusers`` 传入到 widthdb/views.py 的 register 函数来处理。在注册前，会验证一下数据是否符合要求。不符合则提示错误信息，符合则将数据插入到数据库之中；
+
+分别点击页面的 点击刷新按钮，和注册按钮，发现可以正常运行（可以参考我的代码 https://github.com/qq20004604/Python3_Django_Demo ）
+

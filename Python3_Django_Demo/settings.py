@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # 以上都是默认，下面是新加入的
-    'homepage'
+    'homepage',
+    'withdb'
 ]
 
 MIDDLEWARE = [
@@ -85,6 +86,7 @@ WSGI_APPLICATION = 'Python3_Django_Demo.wsgi.application'
 
 DATABASES = {
     'default': {
+        # 默认是sqlite3
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }

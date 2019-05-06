@@ -19,16 +19,23 @@ from django.urls import path
 from homepage import views as homepage_views
 from inject_str import views as str_views
 from getform import views as form_views
+from withdb import views as db_views
 
 # 这里配置 url
 urlpatterns = [
-	path('', homepage_views.index),
-	path('list/', str_views.index),
-	path('admin/', admin.site.urls),
-	# 这个是html
-	path('form/', form_views.index),
-	# 这个是处理post提交
-	path('form/submit', form_views.submit),
-	# 处理json提交
-	path('form/json', form_views.postjson),
+    path('', homepage_views.index),
+    path('list/', str_views.index),
+    path('admin/', admin.site.urls),
+    # 这个是html
+    path('form/', form_views.index),
+    # 这个是处理post提交
+    path('form/submit', form_views.submit),
+    # 处理json提交
+    path('form/json', form_views.postjson),
+    # 显示页面
+    path('user/', db_views.index),
+    # 注册用户
+    path('user/register', db_views.register),
+    # 查看用户列表
+    path('user/getusers', db_views.getusers)
 ]
