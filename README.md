@@ -4,6 +4,8 @@
 
 群主的QQ群：387017550
 
+点击链接加入群聊【前端与后端交流学习】：https://jq.qq.com/?_wv=1027&k=53jrCzq
+
 项目demo地址：https://github.com/qq20004604/Python3_Django_Demo
 
 版本：
