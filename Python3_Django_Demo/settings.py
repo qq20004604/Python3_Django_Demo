@@ -85,11 +85,51 @@ WSGI_APPLICATION = 'Python3_Django_Demo.wsgi.application'
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        # 默认是sqlite3
+    'sqlitedb': {
+        # 之前的sqlite3配置
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3.bak'),
+    },
+    # 这里是和mysql交互，用于配置默认的那些app
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',  # 数据库引擎，这个用的是pymysql，具体见官方文档
+        'NAME': 'django_default',  # 这里是database 名
+        'USER': 'root',  # 为了方便，用root，实际应用中应添加特定用户
+        'PASSWORD': 'fwefwefvvdsbwrgbr9jj24intwev0h0nbor32fwfmv1',  # 密码
+        'HOST': '127.0.0.1',  # mysql服务所在的主机ip，这里是在本机用的docker装的mysql，所以是127.0.0.1
+        'PORT': '3306',  # mysql服务端口
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+        }
+    },
+    # 这里是和mysql交互，用于 withdb 这个应用使用
+    'userdb': {
+        'ENGINE': 'django.db.backends.mysql',  # 数据库引擎，这个用的是pymysql，具体见官方文档
+        'NAME': 'django',  # 这里是database 名
+        'USER': 'root',  # 为了方便，用root，实际应用中应添加特定用户
+        'PASSWORD': 'fwefwefvvdsbwrgbr9jj24intwev0h0nbor32fwfmv1',  # 密码
+        'HOST': '127.0.0.1',  # mysql服务所在的主机ip，这里是在本机用的docker装的mysql，所以是127.0.0.1
+        'PORT': '3306',  # mysql服务端口
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+        }
     }
+}
+
+# 多应用的db路由
+DATABASE_ROUTERS = ['Python3_Django_Demo.database_router.DatabaseAppsRouter']
+DATABASE_APPS_MAPPING = {
+    # example:
+    # 'app_name':'database_name',
+    # 这些是默认应用
+    'admin': 'default',
+    'auth': 'default',
+    'contenttypes': 'default',
+    'sessions': 'default',
+    'messages': 'default',
+    'staticfiles': 'default',
+    # 这些是自定义应用
+    'withdb': 'userdb',
 }
 
 # Password validation

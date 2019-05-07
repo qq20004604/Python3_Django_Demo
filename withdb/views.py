@@ -49,6 +49,8 @@ def register(request):
     try:
         # 这个的返回值，是当前 list 的所有值
         models.UserInfo.objects.create(username=username, password=md5_pw)
+        # 可以使用默认db，也可以指定使用某个db
+        # models.UserInfo.objects.using('default').create(username=username, password=md5_pw)
     except BaseException as e:
         save_success = False
         with open('./log.log', 'a') as f:
@@ -62,7 +64,8 @@ def register(request):
 
 # 这个是获取用户列表的逻辑
 def getusers(request):
-    user_list = models.UserInfo.objects.all()
+    # user_list = models.UserInfo.objects.all()
+    user_list = models.UserInfo.objects.using('userdb').all()
     list = []
     # user_list　是一个 <class 'django.db.models.query.QuerySet'>
     for i in user_list:

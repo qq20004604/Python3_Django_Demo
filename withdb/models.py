@@ -10,6 +10,7 @@ class UserInfo(models.Model):
     # 字段名为username和password，max_length 指这2个字段的最大长度。
     username = models.CharField(max_length=20)
     password = models.CharField(max_length=20)
+
     # 其他参数可选配置包括：（可以点进CharFiled函数查看）
     # verbose_name = None, name = None, primary_key = False,
     # max_length = None, unique = False, blank = False, null = False,

@@ -982,3 +982,316 @@ templates 目录下创建 user.html
 
 分别点击页面的 点击刷新按钮，和注册按钮，发现可以正常运行（可以参考我的代码 https://github.com/qq20004604/Python3_Django_Demo ）
 
+### 8.4、和mysql交互（ORM形式）
+
+#### 8.4.1、简述
+
+方式和8.3的 sqlite3 使用方式几乎一样，唯一区别是存到 mysql 里，而不是 sqlite 里。
+
+#### 8.4.2、引入mysql驱动
+
+1、python和mysql交互，需要装一个驱动：
+
+```
+pip install pymysql
+```
+
+2、然后编辑 urls.py 同级目录的 ``__init__.py``，添加内容：
+
+```
+import pymysql
+
+pymysql.install_as_MySQLdb()
+```
+
+3、但是报错：
+
+```
+django.core.exceptions.ImproperlyConfigured: mysqlclient 1.3.13 or newer is required; you have 0.9.3.
+```
+
+查找N篇解决方案，此方案可供参考：
+
+https://blog.csdn.net/weixin_33127753/article/details/89100552
+
+选用方案二：【删除源代码的警告文件！】（真TM暴力）
+
+简单来说，就是注释掉那行报错的判断信息就行了。
+
+4、注释后，有红字提示：
+
+```
+You have 17 unapplied migration(s). Your project may not work properly until you apply the migrations for app(s): admin, auth, contenttypes, sessions.
+Run 'python manage.py migrate' to apply them.
+```
+
+意思是你的应用数据库没迁移（指没从sqlite3迁移到mysql里）。
+
+
+#### 8.4.3、配置database
+
+编辑 settings.py 的 DATABASES 属性，如下：
+
+```
+DATABASES = {
+	# 这里是和mysql交互
+	'default': {
+		'ENGINE': 'django.db.backends.mysql',  # 数据库引擎，这个用的是pymysql，具体见官方文档
+		'NAME': 'django',  # 这里是database 名
+		'USER': 'root',  # 为了方便，用root，实际应用中应添加特定用户
+		'PASSWORD': 'fwefwefvvdsbwrgbr9jj24intwev0h0nbor32fwfmv1',  # 密码
+		'HOST': '127.0.0.1',  # mysql服务所在的主机ip，这里是在本机用的docker装的mysql，所以是127.0.0.1
+		'PORT': '3306',  # mysql服务端口
+		'OPTIONS': {
+			'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+		}
+	}
+}
+```
+
+#### 8.4.4、数据库准备
+
+1、在数据库里建立 database（名字等于上面 mysqldb 配置中 NAME 的值）；
+
+```
+create database django;
+```
+
+2、初始化数据库的表配置：
+
+记录改动：
+
+```
+python manage.py makemigrations
+```
+
+
+插入到数据库中：
+
+```
+python manage.py migrate
+```
+
+3、查看数据库
+
+进入mysql，然后 ``use [database_name];``，再查看有哪些表 ``show tables;``（可以看到有一个表格django_migrations），再查看表内容 ``select * from django_migrations;``，发现是有数据的。
+
+```
+mysql> show tables;
++----------------------------+
+| Tables_in_django           |
++----------------------------+
+| auth_group                 |
+| auth_group_permissions     |
+| auth_permission            |
+| auth_user                  |
+| auth_user_groups           |
+| auth_user_user_permissions |
+| django_admin_log           |
+| django_content_type        |
+| django_migrations          |
+| django_session             |
+| withdb_userinfo            |
++----------------------------+
+11 rows in set (0.01 sec)
+```
+
+#### 8.4.5、其他配置
+
+参考8.3.4、8.3.5、8.3.6，这个时候刷新数据。
+
+验证后可以发现和sqlite版一样正常运行。
+
+### 8.5、多数据库配置
+
+这里指：
+
+* 同时使用sqlite3和mysql；
+* 或者mysql使用不同database；
+* 或者直接就是不同server的mysql数据库；
+
+#### 8.5.1、修改settings.py
+
+修改settings.py，先修改 DATABASE的配置：
+
+```
+DATABASES = {
+    'sqlitedb': {
+        # 之前的sqlite3配置
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3.bak'),
+    },
+    # 这里是和mysql交互，用于配置默认的那些app
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',  # 数据库引擎，这个用的是pymysql，具体见官方文档
+        'NAME': 'django_default',  # 这里是database 名
+        'USER': 'root',  # 为了方便，用root，实际应用中应添加特定用户
+        'PASSWORD': 'fwefwefvvdsbwrgbr9jj24intwev0h0nbor32fwfmv1',  # 密码
+        'HOST': '127.0.0.1',  # mysql服务所在的主机ip，这里是在本机用的docker装的mysql，所以是127.0.0.1
+        'PORT': '3306',  # mysql服务端口
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+        }
+    },
+    # 这里是和mysql交互，用于 withdb 这个应用使用
+    'userdb': {
+        'ENGINE': 'django.db.backends.mysql',  # 数据库引擎，这个用的是pymysql，具体见官方文档
+        'NAME': 'django',  # 这里是database 名
+        'USER': 'root',  # 为了方便，用root，实际应用中应添加特定用户
+        'PASSWORD': 'fwefwefvvdsbwrgbr9jj24intwev0h0nbor32fwfmv1',  # 密码
+        'HOST': '127.0.0.1',  # mysql服务所在的主机ip，这里是在本机用的docker装的mysql，所以是127.0.0.1
+        'PORT': '3306',  # mysql服务端口
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+        }
+    }
+}
+```
+
+再添加两行配置：
+
+```
+# 多应用的db路由
+DATABASE_ROUTERS = ['Python3_Django_Demo.database_router.DatabaseAppsRouter']
+DATABASE_APPS_MAPPING = {
+    # example:
+    # 'app_name':'database_name',
+    # 这些是默认应用
+    'admin': 'default',
+    'auth': 'default',
+    'contenttypes': 'default',
+    'sessions': 'default',
+    'messages': 'default',
+    'staticfiles': 'default',
+    # 这些是自定义应用
+    'withdb': 'userdb',
+}
+```
+
+以上配置表示，使用 database_router.py 文件里的 DatabaseAppsRouter 函数来处理路由。
+
+以及不同app默认使用不同的db设置（也可以在实际使用的时候，手动指定具体使用哪一个）
+
+#### 8.5.2、编写db的路由函数
+
+在 settings.py 目录下，新建 database_router.py 文件。
+
+内容如下：
+
+```
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+from django.conf import settings
+
+DATABASE_MAPPING = settings.DATABASE_APPS_MAPPING
+
+
+class DatabaseAppsRouter(object):
+    """
+    A router to control all database operations on models for different
+    databases.
+
+    In case an app is not set in settings.DATABASE_APPS_MAPPING, the router
+    will fallback to the `default` database.
+
+    Settings example:
+
+    DATABASE_APPS_MAPPING = {'app1': 'db1', 'app2': 'db2'}
+
+    这个路由，针对对不同的数据库，用于操作所有的数据库模型
+
+    如果一个应用没有在 settings 里的 DATABASE_APPS_MAPPING 中配置，那么这个路由将最后被 default 这个数据库来配置
+
+    设置示例（这里指 DATABASE_APPS_MAPPING 属性）：
+
+    DATABASE_APPS_MAPPING = {'app1': 'db1', 'app2': 'db2'}
+    """
+
+    def db_for_read(self, model, **hints):
+        """"
+        Point all read operations to the specific database.
+        将所有读取操作，指向对特定的数据库
+        """
+        if model._meta.app_label in DATABASE_MAPPING:
+            return DATABASE_MAPPING[model._meta.app_label]
+        return None
+
+    def db_for_write(self, model, **hints):
+        """
+        Point all write operations to the specific database.
+        将所有的写操作，指向特定的数据库
+        """
+        if model._meta.app_label in DATABASE_MAPPING:
+            return DATABASE_MAPPING[model._meta.app_label]
+        return None
+
+    def allow_relation(self, obj1, obj2, **hints):
+        """
+        Allow any relation between apps that use the same database.
+        允许 任何使用相同数据库的应用 的任何关系
+        """
+        db_obj1 = DATABASE_MAPPING.get(obj1._meta.app_label)
+        db_obj2 = DATABASE_MAPPING.get(obj2._meta.app_label)
+        if db_obj1 and db_obj2:
+            if db_obj1 == db_obj2:
+                return True
+            else:
+                return False
+        return None
+
+    # Django 1.7 - Django 1.11
+    def allow_migrate(self, db, app_label, model_name=None, **hints):
+        print
+        db, app_label, model_name, hints
+        if db in DATABASE_MAPPING.values():
+            return DATABASE_MAPPING.get(app_label) == db
+        elif app_label in DATABASE_MAPPING:
+            return False
+        return None
+```
+
+#### 8.5.3、数据库准备
+
+我们依然需要进行数据库准备。
+
+首先需要创建2个database，分别是：``django_default`` 和 ``django`` 这2个。
+
+然后执行以下三行代码做数据库的准备（创建table等）
+
+记录改动：
+
+```
+python manage.py makemigrations
+```
+
+插入到数据库中：(后面的名字是下面DATABASES的属性的key值）
+
+```
+python manage.py migrate
+python manage.py migrate --database=userdb
+```
+
+上面两行 migrate ，不带参数的，只生成default里配置的那些app的table。
+
+带参数的，生成 DATABASES 这个 dict 里 key 为 userdb ，跟他相关的应用所需要的 table。
+
+#### 8.5.4、其他
+
+其他的复用之前使用默认mysql配置的代码，不需要改动。
+
+唯一需要提一下的是，在 views.py 里操作数据库，我们之前使用代码例如：
+
+```
+models.UserInfo.objects.all()
+```
+
+这里是使用默认指定的db，我们也可以使用指定db，如下：
+
+```
+models.UserInfo.objects.using('userdb').all()
+```
+
+源代码参照我的github项目：（安装好依赖后就直接能跑）
+
+https://github.com/qq20004604/Python3_Django_Demo
