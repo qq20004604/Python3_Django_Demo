@@ -1,7 +1,10 @@
 # Python3_Django_Demo
 
-
 ## 0、说明
+
+群主的QQ群：387017550
+
+点击链接加入群聊【前端与后端交流学习】：https://jq.qq.com/?_wv=1027&k=53jrCzq
 
 项目demo地址：https://github.com/qq20004604/Python3_Django_Demo
 
@@ -11,8 +14,6 @@
 django版本：2.2.1
 python版本：3.7
 ```
-
-群主的QQ群：387017550
 
 ## 1、安装
 
@@ -671,22 +672,38 @@ def postjson(request):
 一切如预期运行。
 
 
-## 8、django和mysql交互
+## 8、django和数据库交互
+
+### 8.0、前注
+
+觉得文章写的对你有帮助，请点赞、关注、Star。
+
+项目资源的github地址：
+
+https://github.com/qq20004604/Python3_Django_Demo
 
 ### 8.1、环境安装
 
-首先，确保你安装了mysql，如果没有安装，请安装，或者使用我这里提供的 docker 版 mysql，如果是linux或者MacOS系统，直接运行 sh 文件就能安装了。
+首先，确保你安装了mysql。
+
+如果没有安装，就只能和sqlite交互了。
+
+**安装方法：**
+
+可以使用我这里提供的 docker 版 mysql，如果是linux或者MacOS系统，直接运行 sh 文件就能安装了。
 
 https://github.com/qq20004604/docker-learning/tree/master/docker-demo-02-MySQL
 
-可以用安装一个虚拟机，装上centos，然后将文件下载到虚拟机上，运行 sh 文件。装虚拟机的教程参照我这篇文章：
+可以用安装一个虚拟机，装上centos，然后将文件下载到虚拟机上，运行 create-image-mysql.sh 文件。
+
+装虚拟机的教程参照我这篇文章：
 
 https://blog.csdn.net/qq20004604/article/details/85080666
 
-配置MySQL：
+配置MySQL：（账号密码来自于docker版的配置）
 
-* 账号为 diango；
-* 密码为 123456；
+* 账号为 root；
+* 密码为 fwefwefvvdsbwrgbr9jj24intwev0h0nbor32fwfmv1；
 * 端口（port）为3306；
 * IP地址为：xxx；
 
@@ -694,10 +711,18 @@ https://blog.csdn.net/qq20004604/article/details/85080666
 
 diango和mysql交互有两种方式：
 
-1. 使用第三方的 mysql-connector 数据库，参照教程：https://www.liaoxuefeng.com/wiki/1016959663602400/1017802264972000 ；或者使用我自己二次封装的：https://github.com/qq20004604/python3-lib/tree/master/mysql_lingling
-2. 使用自带的驱动（默认是sqlite3，但可以改为mysql）；
+1. 使用自带的驱动（默认是sqlite3，但可以改为mysql），以ORM形式和mysql交互；
+2. 使用第三方的 mysql-connector 数据库，参照廖雪峰的教程：https://www.liaoxuefeng.com/wiki/1016959663602400/1017802264972000 ；或者使用我自己二次封装的：https://github.com/qq20004604/python3-lib/tree/master/mysql_lingling
 
-根据难度和默认情况，我们以 sqlite3 ——> 自带mysql驱动 ——> 第三方模块 的顺序来分析
+本文包含： 
+
+* sqlite3；
+* ORM形式和mysql交互；
+* 多数据库情况下和mysql交互；
+
+通过第三方python和mysql交互的使用方法，可以参考上面2个教程。
+
+方便程度来说，sqlite最方便，第三方也很方便，使用自带mysql驱动最麻烦（版本不对的话要修改配置文件，很坑）。
 
 ### 8.3、和sqlite3交互
 
@@ -707,7 +732,7 @@ diango和mysql交互有两种方式：
 python manage.py startapp withdb
 ```
 
-然后注册应用，编辑 settings.py，在 INSTALLED_APPS 添加新增应用withdb（homepage是之前添加的）
+然后注册应用，编辑 ``settings.py``，在 INSTALLED_APPS 添加新增应用withdb（homepage是之前添加的）
 
 ```
 INSTALLED_APPS = [
@@ -725,7 +750,7 @@ INSTALLED_APPS = [
 
 #### 8.3.2、配置model
 
-编辑 withdb/models.py 文件：
+编辑 ``withdb/models.py`` 文件：
 
 ```
 from django.db import models
@@ -760,7 +785,7 @@ class UserInfo(models.Model):
 python manage.py makemigrations
 ```
 
-这个命令的效果，相当于在该 app（应用）下建立 migrations 目录，并记录下你所有的关于 modes.py 的改动，比如0001_initial.py， 但是这个改动还没有作用到数据库文件。
+这个命令的效果，相当于在该 app（应用）下建立 migrations 目录，并记录下你所有的关于 ``modes.py`` 的改动，比如 ``0001_initial.py``， 但是这个改动还没有作用到数据库文件。
 
 再执行命令：
 
@@ -772,7 +797,7 @@ python manage.py migrate
 
 #### 8.3.4、添加路由
 
-老规矩，修改 urls.py ，添加路由：
+老规矩，修改 ``urls.py`` ，添加路由：
 
 ```
 # 显示页面
@@ -785,7 +810,7 @@ path('user/getusers', db_views.getusers)
 
 #### 8.3.5、添加异步请求的处理逻辑
 
-修改 withdb/views.py，内容如下：
+修改 ``withdb/views.py``，内容如下：
 
 ```
 from django.shortcuts import render, HttpResponse
@@ -976,9 +1001,9 @@ templates 目录下创建 user.html
 
 2、页面里有两个功能：【显示用户列表】和【注册新用户】
 
-3、显示用户列表：将请求链接：``/user/getusers``，然后通过 ORM 表结构（widthdb/models.py）来读取数据库，并通过 widthdb/views.py 的 getusers 函数返回相关信息；
+3、显示用户列表：将请求链接：``/user/getusers``，然后通过 ORM 表结构（``widthdb/models.py``）来读取数据库，并通过 ``widthdb/views.py`` 的 getusers 函数返回相关信息；
 
-4、注册用户：以异步请求的方式将username和password字段通过 ``/user/getusers`` 传入到 widthdb/views.py 的 register 函数来处理。在注册前，会验证一下数据是否符合要求。不符合则提示错误信息，符合则将数据插入到数据库之中；
+4、注册用户：以异步请求的方式将username和password字段通过 ``/user/getusers`` 传入到 ``widthdb/views.py`` 的 register 函数来处理。在注册前，会验证一下数据是否符合要求。不符合则提示错误信息，符合则将数据插入到数据库之中；
 
 分别点击页面的 点击刷新按钮，和注册按钮，发现可以正常运行（可以参考我的代码 https://github.com/qq20004604/Python3_Django_Demo ）
 
@@ -988,6 +1013,8 @@ templates 目录下创建 user.html
 
 方式和8.3的 sqlite3 使用方式几乎一样，唯一区别是存到 mysql 里，而不是 sqlite 里。
 
+这里使用的是django默认和mysql交互的方式来实现的。（不需要手写sql，通过ORM形式实现和数据库的管理）
+
 #### 8.4.2、引入mysql驱动
 
 1、python和mysql交互，需要装一个驱动：
@@ -996,7 +1023,7 @@ templates 目录下创建 user.html
 pip install pymysql
 ```
 
-2、然后编辑 urls.py 同级目录的 ``__init__.py``，添加内容：
+2、然后编辑 ``urls.py`` 同级目录的 ``__init__.py``，添加内容：
 
 ```
 import pymysql
@@ -1014,7 +1041,7 @@ django.core.exceptions.ImproperlyConfigured: mysqlclient 1.3.13 or newer is requ
 
 https://blog.csdn.net/weixin_33127753/article/details/89100552
 
-选用方案二：【删除源代码的警告文件！】（真TM暴力）
+选用方案二：【删除源代码的警告代码！】（真TM暴力）
 
 简单来说，就是注释掉那行报错的判断信息就行了。
 
@@ -1030,7 +1057,7 @@ Run 'python manage.py migrate' to apply them.
 
 #### 8.4.3、配置database
 
-编辑 settings.py 的 DATABASES 属性，如下：
+编辑 ``settings.py`` 的 DATABASES 属性，如下：
 
 ```
 DATABASES = {
@@ -1110,9 +1137,10 @@ mysql> show tables;
 * 或者mysql使用不同database；
 * 或者直接就是不同server的mysql数据库；
 
-#### 8.5.1、修改settings.py
 
-修改settings.py，先修改 DATABASE的配置：
+#### 8.5.1、修改 ``settings.py``
+
+修改 ``settings.py``，先修改 DATABASE的配置：
 
 ```
 DATABASES = {
@@ -1168,13 +1196,13 @@ DATABASE_APPS_MAPPING = {
 }
 ```
 
-以上配置表示，使用 database_router.py 文件里的 DatabaseAppsRouter 函数来处理路由。
+以上配置表示，使用 ``database_router.py`` 文件里的 DatabaseAppsRouter 函数来处理路由。
 
 以及不同app默认使用不同的db设置（也可以在实际使用的时候，手动指定具体使用哪一个）
 
 #### 8.5.2、编写db的路由函数
 
-在 settings.py 目录下，新建 database_router.py 文件。
+在 ``settings.py`` 同目录下，新建 ``database_router.py`` 文件。
 
 内容如下：
 
@@ -1280,7 +1308,7 @@ python manage.py migrate --database=userdb
 
 其他的复用之前使用默认mysql配置的代码，不需要改动。
 
-唯一需要提一下的是，在 views.py 里操作数据库，我们之前使用代码例如：
+唯一需要提一下的是，在 ``views.py`` 里操作数据库，我们之前使用代码例如：
 
 ```
 models.UserInfo.objects.all()
