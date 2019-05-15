@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # 以上都是默认，下面是新加入的
     'homepage',
-    'withdb'
+    'withdb',
+    'dynamic_template'
 ]
 
 MIDDLEWARE = [
