@@ -36,7 +36,7 @@ django-admin startproject [项目名]
 例如：
 
 ```
-django-admin startproject  
+django-admin startproject blogproject
 ```
 
 会在当前目录下创建一个 ``blogproject`` 文件夹，进入该文件夹后，还会有一个 ``blogproject`` 文件夹，这个里面有多个 py 文件，例如 ``urls.py``

@@ -20,7 +20,6 @@ from homepage import views as homepage_views
 from inject_str import views as str_views
 from getform import views as form_views
 from withdb import views as db_views
-from dynamic_template import views as dy_views
 
 # 这里配置 url
 urlpatterns = [
@@ -39,6 +38,4 @@ urlpatterns = [
     path('user/register', db_views.register),
     # 查看用户列表
     path('user/getusers', db_views.getusers),
-    # 动态数据嵌入页面
-    path('dy/', dy_views.index),
 ]
