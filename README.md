@@ -1323,3 +1323,26 @@ models.UserInfo.objects.using('userdb').all()
 源代码参照我的github项目：（安装好依赖后就直接能跑）
 
 https://github.com/qq20004604/Python3_Django_Demo
+
+
+## 9、部分关闭CSRF功能
+
+我们有时候会遇见本地调试的情况，举例来说，前端页面跑在webpack的DevServer上，然后将请求转发到 Django 服务。
+
+假如是 Post 请求，此时 Django 服务会验证 CSRF token，但显然我们是拿不到 CSRF token 的。
+
+解决方法如下：
+
+在 ``views.py`` 中引入：
+
+```
+from django.views.decorators.csrf import csrf_exempt
+```
+
+然后在路由的处理逻辑函数名上添加 ``@csrf_exempt``，例如：
+
+```
+@csrf_exempt
+def login(req):
+    pass
+```
